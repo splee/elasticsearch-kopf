@@ -1,17 +1,17 @@
 function ShardRecovery(indexName, shardInfo) {
   var pad = function(num) {
-    var numStr = "0" + num;
+    var numStr = '0' + num;
     return numStr.slice(-2);
-  }
+  };
 
   var humanDuration = function(duration) {
     duration = duration / 1000;
     var hours = Math.floor(duration / 3600);
-    var hrs_remainder = duration % 3600;
-    var minutes = Math.floor(hrs_remainder / 60);
-    var seconds = Math.floor(hrs_remainder % 60);
+    var hrsRemainder = duration % 3600;
+    var minutes = Math.floor(hrsRemainder / 60);
+    var seconds = Math.floor(hrsRemainder % 60);
 
-    return pad(hours) + ":" + pad(minutes) + ":" + pad(seconds);
+    return hours + ':' + pad(minutes) + ':' + pad(seconds);
   };
 
   this.shardInfo = shardInfo;
@@ -33,7 +33,9 @@ function ShardRecovery(indexName, shardInfo) {
   this.index.duration = humanDuration(this.index.total_time_in_millis);
 
   this.verify_index = shardInfo.verify_index;
-  this.verify_index.duration = humanDuration(this.verify_index.total_time_in_millis);
+  this.verify_index.duration = humanDuration(
+      this.verify_index.total_time_in_millis
+  );
 
   this.translog = shardInfo.translog;
   this.translog.duration = humanDuration(this.translog.total_time_in_millis);

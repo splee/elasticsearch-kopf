@@ -889,19 +889,17 @@ kopf.factory('ElasticService', ['$http', '$q', '$timeout', '$location',
     this.getShardRecoveries = function(success, error) {
       var transform = function(response) {
         var recoveries = [];
-        for (var index_name in response) {
-          var shards = response[index_name].shards;
-          for (var shard_idx in shards) {
-            recoveries.push(new ShardRecovery(index_name, shards[shard_idx]));
+        for (var indexName in response) {
+          var shards = response[indexName].shards;
+          for (var shardIdx in shards) {
+            recoveries.push(new ShardRecovery(indexName, shards[shardIdx]));
           }
         }
         success(recoveries);
       };
-
       var path = '/_recovery?active_only=true';
       this.clusterRequest('GET', path, {}, {}, transform, error);
     };
-
 
     this.refresh = function() {
       if (this.isConnected()) {
