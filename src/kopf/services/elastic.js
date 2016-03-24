@@ -886,6 +886,23 @@ kopf.factory('ElasticService', ['$http', '$q', '$timeout', '$location',
       );
     };
 
+    this.getShardRecoveries = function(success, error) {
+      var transform = function(response) {
+        var recoveries = [];
+        for (var index_name in response) {
+          var shards = response[index_name].shards;
+          for (var shard_idx in shards) {
+            recoveries.push(new ShardRecovery(index_name, shards[shard_idx]));
+          }
+        }
+        success(recoveries);
+      };
+
+      var path = '/_recovery?active_only=true';
+      this.clusterRequest('GET', path, {}, {}, transform, error);
+    };
+
+
     this.refresh = function() {
       if (this.isConnected()) {
         var threshold = (ExternalSettingsService.getRefreshRate() * 0.75);

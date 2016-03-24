@@ -90,6 +90,10 @@ kopf.config(function($routeProvider, $locationProvider) {
         templateUrl: 'partials/hotthreads.html',
         controller: 'HotThreadsController'
       }).
+      when('/recovery', {
+        templateUrl: 'partials/recovery/recovery.html',
+        controller: 'RecoveryController'
+      }).
       otherwise({redirectTo: '/cluster'});
 });
 
@@ -1793,6 +1797,59 @@ kopf.controller('PercolatorController', ['$scope', 'ConfirmDialogService',
   }
 ]);
 
+kopf.controller('RecoveryController', ['$scope', 'ConfirmDialogService',
+  'AlertService', 'ElasticService', 'AppState',
+  function($scope, ConfirmDialogService, AlertService, ElasticService,
+           AppState) {
+
+    $scope.sortBy = 'index_name';
+    $scope.reverse = false;
+
+    $scope.setSortBy = function(field) {
+      if ($scope.sortBy === field) {
+        $scope.reverse = !$scope.reverse;
+      }
+      $scope.sortBy = field;
+    };
+
+    $scope.filter = AppState.getProperty(
+        'RecoveryController',
+        'filter',
+        new NodeFilter('', true, true, true, 0)
+    );
+
+    $scope.recoveries = [];
+
+    $scope.$watch('filter',
+        function(newValue, oldValue) {
+          $scope.refresh();
+        },
+        true);
+
+    $scope.$watch(
+        function() {
+          return ElasticService.cluster;
+        },
+        function(newValue, oldValue) {
+          $scope.refresh();
+        }
+    );
+
+    $scope.refresh = function() {
+      ElasticService.getShardRecoveries(
+        function(recoveries) {
+          $scope.recoveries = recoveries.filter(function(recovery) {
+            return $scope.filter.matches(recovery);
+          });
+        },
+        function(error) {
+          AlertService.error('Error while loading recovering shards', error);
+        }
+      );
+    };
+  }
+]);
+
 kopf.controller('RestController', ['$scope', '$location', '$timeout',
   'ExplainService', 'AlertService', 'AceEditorService', 'ElasticService',
   'ClipboardService',
@@ -3459,6 +3516,47 @@ function Shard(routing) {
   this.node = routing.node;
   this.index = routing.index;
   this.id = this.node + '_' + this.shard + '_' + this.index;
+}
+
+function ShardRecovery(indexName, shardInfo) {
+  var pad = function(num) {
+    var numStr = "0" + num;
+    return numStr.slice(-2);
+  }
+
+  var humanDuration = function(duration) {
+    duration = duration / 1000;
+    var hours = Math.floor(duration / 3600);
+    var hrs_remainder = duration % 3600;
+    var minutes = Math.floor(hrs_remainder / 60);
+    var seconds = Math.floor(hrs_remainder % 60);
+
+    return pad(hours) + ":" + pad(minutes) + ":" + pad(seconds);
+  };
+
+  this.shardInfo = shardInfo;
+
+  this.indexName = indexName;
+  this.id = shardInfo.id;
+  this.type = shardInfo.type;
+  this.primary = shardInfo.primary;
+  this.stage = shardInfo.stage;
+  this.start_time_in_millis = shardInfo.start_time_in_millis;
+  this.started = new Date(this.start_time_in_millis);
+  this.total_time_in_millis = shardInfo.total_time_in_millis;
+  this.duration = humanDuration(this.total_time_in_millis);
+
+  this.target = shardInfo.target;
+  this.source = shardInfo.source;
+
+  this.index = shardInfo.index;
+  this.index.duration = humanDuration(this.index.total_time_in_millis);
+
+  this.verify_index = shardInfo.verify_index;
+  this.verify_index.duration = humanDuration(this.verify_index.total_time_in_millis);
+
+  this.translog = shardInfo.translog;
+  this.translog.duration = humanDuration(this.translog.total_time_in_millis);
 }
 
 function ShardStats(shard, index, stats) {
@@ -5418,6 +5516,23 @@ kopf.factory('ElasticService', ['$http', '$q', '$timeout', '$location',
           }
       );
     };
+
+    this.getShardRecoveries = function(success, error) {
+      var transform = function(response) {
+        var recoveries = [];
+        for (var index_name in response) {
+          var shards = response[index_name].shards;
+          for (var shard_idx in shards) {
+            recoveries.push(new ShardRecovery(index_name, shards[shard_idx]));
+          }
+        }
+        success(recoveries);
+      };
+
+      var path = '/_recovery?active_only=true';
+      this.clusterRequest('GET', path, {}, {}, transform, error);
+    };
+
 
     this.refresh = function() {
       if (this.isConnected()) {

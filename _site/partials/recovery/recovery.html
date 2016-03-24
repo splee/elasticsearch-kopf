@@ -1,0 +1,114 @@
+<div class="row">
+  <div class="col-lg-10">
+    <div class="row">
+      <div class="col-lg-3 col-sm-6  cluster-overview-filter">
+        <input type="text" ng-model="filter.index" class="form-control input-sm" placeholder="filter nodes by index">
+      </div>
+    </div>
+  </div>
+</div>
+<table class="table table-bordered table-condensed table-rounded overview">
+  <thead>
+    <th class="table-header box">
+      <ng-sort-by property="shard" text="shard">shard</ng-sort-by>
+    </th>
+    <th class="table-header box">
+      <ng-sort-by property="stage" text="stage"></ng-sort-by>
+    </th>
+    <th class="table-header box">
+      <ng-sort-by property="source" text="source"></ng-sort-by>
+    </th>
+    <th class="table-header box">
+      <ng-sort-by property="dest" text="target"></ng-sort-by>
+    </th>
+    <th class="table-header box">
+      <ng-sort-by property="duration" text="duration"></ng-sort-by>
+    </th>
+    <th class="table-header box">
+      <ng-sort-by property="start" text="started"></ng-sort-by>
+    </th>
+    <th class="table-header box">
+      <ng-sort-by property="files" text="files"></ng-sort-by>
+    </th>
+    <th class="table-header box">
+      <ng-sort-by property="translog" text="translog"></ng-sort-by>
+    </th>
+  </thead>
+  <tbody>
+    <tr ng-repeat="recovery in recoveries | orderBy:sortBy:reverse track by $index">
+      <td class="box">
+        <div class="node-badges">
+          <div ng-show="recovery.primary">
+            <i ng-show="recovery.primary" class="fa fa-fw fa-database" title="primary shard"></i>
+            <i ng-show="!recovery.primary" class="fa fa-fw fa-file-o" title="replica shard"></i>
+          </div>
+        </div>
+        <div class="node-info">
+          <div>
+            <span class="cluster-map-header-index-name">{{recovery.indexName}} </span>
+          </div>
+          <div>
+            <span class="cluster-map-node-detail">{{recovery.type}}: {{recovery.id}}</span>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div>
+          <span class="node-info">
+            {{recovery.stage}}
+          </span>
+        </div>
+      </td>
+      <td>
+        <div>
+          <span class="node-info">
+            {{recovery.source.name}}
+          </span>
+        </div>
+      </td>
+      <td>
+        <div>
+          <span class="node-info">
+            {{recovery.target.name}}
+          </span>
+        </div>
+      </td>
+      <td>
+        <div>
+          <span class="node-stat">
+            {{recovery.duration}}
+          </span>
+        </div>
+      </td>
+      <td>
+        <div>
+          <span class="node-info">
+            {{recovery.started | date:'medium'}}
+          </span>
+        </div>
+      </td>
+      <td>
+        <div>
+          <span class="node-stat">
+            {{recovery.index.files.percent}}
+          </span>
+          <span class="node-stat-detail">
+            <div>{{recovery.index.files.recovered}} of {{recovery.index.files.total}}</div>
+            <div>{{recovery.index.duration}}</div>
+          </span>
+        </div>
+      </td>
+      <td>
+        <div>
+          <span class="node-stat">
+            {{recovery.translog.percent}}
+          </span>
+          <span class="node-stat-detail">
+            <div>{{recovery.translog.recovered}} of {{recovery.translog.total}}</div>
+            <div>{{recovery.translog.duration}}</div>
+          </span>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
